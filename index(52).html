@@ -1,0 +1,618 @@
+<title>Script Tracker</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap">
+<style>
+  :root {
+    --bg: #111311;
+    --surface: #191b19;
+    --surface-raised: #1f211f;
+    --border: #282a28;
+    --border-light: #323432;
+    --text: #ddddd9;
+    --text-secondary: #9a9a96;
+    --text-muted: #636360;
+    --accent: #5e9e5e;
+    --accent-dim: #3a6b3a;
+    --accent-bg: rgba(94,158,94,0.08);
+    --warning: #c4a24e;
+    --warning-bg: rgba(196,162,78,0.08);
+    --danger: #c45454;
+    --danger-bg: rgba(196,84,84,0.08);
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    padding: 0 16px;
+    padding-block: 0;
+    max-width: 520px;
+    margin: 0 auto;
+    min-height: 100%;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .mono { font-family: 'DM Mono', 'SF Mono', 'Consolas', monospace; }
+
+  /* Header */
+  .header {
+    padding: 28px 0 20px;
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    background: var(--bg);
+    z-index: 10;
+  }
+  .header h1 {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 0 0 2px;
+    letter-spacing: -0.01em;
+  }
+  .header p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin: 0;
+  }
+
+  /* Usage bar */
+  .usage-section { margin: 0 0 24px; }
+  .usage-numbers {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .usage-current {
+    font-size: 32px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .usage-current span { color: var(--text-muted); font-weight: 400; font-size: 16px; }
+  .usage-limit { font-size: 13px; color: var(--text-muted); }
+  .bar-track {
+    width: 100%;
+    height: 6px;
+    background: var(--surface-raised);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--accent);
+    transition: width 0.4s ease, background 0.3s ease;
+  }
+  .bar-fill.warn { background: var(--warning); }
+  .bar-fill.full { background: var(--danger); }
+
+  /* Next available */
+  .next-available {
+    margin: 14px 0 0;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .next-available.ok {
+    background: var(--accent-bg);
+    color: var(--accent);
+    border: 1px solid rgba(94,158,94,0.12);
+  }
+  .next-available.waiting {
+    background: var(--warning-bg);
+    color: var(--warning);
+    border: 1px solid rgba(196,162,78,0.12);
+  }
+  .next-available.maxed {
+    background: var(--danger-bg);
+    color: var(--danger);
+    border: 1px solid rgba(196,84,84,0.12);
+  }
+  .next-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+
+  /* Upcoming freeups */
+  .freeups { margin: 0 0 28px; }
+  .freeups-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin: 14px 0 8px;
+  }
+  .freeup-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .freeup-row .grams {
+    color: var(--accent);
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+  }
+
+  /* Dispensed list */
+  .section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    margin: 0 0 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .section-title button {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    padding: 0;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  .section-title button:hover { text-decoration: underline; }
+
+  .entry-list { display: flex; flex-direction: column; gap: 2px; margin: 0 0 24px; }
+
+  .entry {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--surface);
+    border-radius: 8px;
+    font-size: 13px;
+  }
+  .entry:first-child { border-radius: 8px 8px 4px 4px; }
+  .entry:last-child { border-radius: 4px 4px 8px 8px; }
+  .entry:only-child { border-radius: 8px; }
+  .entry-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+  .entry-grams {
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  .entry-date {
+    font-size: 12px;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .entry-delete {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px;
+    font-size: 14px;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .entry:hover .entry-delete { opacity: 1; }
+  @media (hover: none) { .entry-delete { opacity: 1; } }
+
+  .empty-state {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+    padding: 32px 0;
+  }
+
+  /* Add form */
+  .add-form {
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 14px;
+    margin: 0 0 32px;
+    border: 1px solid var(--border);
+  }
+  .form-row {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .form-row.two { grid-template-columns: 1fr 1fr; }
+  .form-row.three { grid-template-columns: 1fr 80px 1fr; }
+
+  label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-muted);
+    display: block;
+    margin-bottom: 4px;
+  }
+  input, select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 14px;
+    padding: 8px 10px;
+    outline: none;
+    transition: border-color 0.15s;
+    box-sizing: border-box;
+  }
+  input:focus, select:focus { border-color: var(--accent-dim); }
+  input::placeholder { color: var(--text-muted); }
+
+  .btn-add {
+    width: 100%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 9px 16px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .btn-add:hover { background: #4e8e4e; }
+  .btn-add:active { background: #3e7e3e; }
+
+  /* Settings */
+  .settings {
+    padding: 20px 0 40px;
+    border-top: 1px solid var(--border);
+  }
+  .setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    margin-bottom: 8px;
+  }
+  .setting-row label {
+    text-transform: none;
+    letter-spacing: 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin: 0;
+  }
+  .setting-row input {
+    width: 70px;
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    padding: 5px 8px;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 0 0 28px;
+    opacity: 0.5;
+  }
+
+  /* Responsive */
+  @media (max-width: 400px) {
+    .entry { grid-template-columns: 1fr auto auto; gap: 8px; }
+    .entry-date { display: none; }
+    .form-row.three { grid-template-columns: 1fr 70px 1fr; }
+  }
+</style>
+
+<div class="header">
+  <h1>Script Tracker</h1>
+  <p>Rolling 30-day medicinal cannabis limit</p>
+</div>
+
+<div class="usage-section">
+  <div class="usage-numbers">
+    <div class="usage-current mono"><span id="used">0</span><span>g / <span id="limitDisplay">60</span>g</span></div>
+    <div class="usage-limit" id="remaining"></div>
+  </div>
+  <div class="bar-track">
+    <div class="bar-fill" id="barFill" style="width: 0%"></div>
+  </div>
+  <div id="nextAvailable"></div>
+</div>
+
+<div id="freeupsSection"></div>
+
+<div class="section-title">
+  <span>Dispensed (<span id="activeCount">0</span> active)</span>
+  <button id="clearAllBtn" type="button" hidden>Clear all</button>
+</div>
+
+<div class="entry-list" id="entryList">
+  <div class="empty-state">No scripts tracked yet</div>
+</div>
+
+<div class="add-form">
+  <div class="form-row three">
+    <div>
+      <label for="medName">Medication</label>
+      <input type="text" id="medName" placeholder="e.g. T20 Daylesford">
+    </div>
+    <div>
+      <label for="medGrams">Grams</label>
+      <input type="number" id="medGrams" placeholder="10" min="0.5" step="0.5">
+    </div>
+    <div>
+      <label for="medDate">Dispensed</label>
+      <input type="date" id="medDate">
+    </div>
+  </div>
+  <button class="btn-add" id="addBtn" type="button">Add Script</button>
+</div>
+
+<div class="settings">
+  <div class="setting-row">
+    <label for="limitInput">Monthly limit (g)</label>
+    <input type="number" id="limitInput" value="60" min="1" max="300">
+  </div>
+  <div class="setting-row">
+    <label for="windowInput">Rolling window (days)</label>
+    <input type="number" id="windowInput" value="30" min="1" max="90">
+  </div>
+</div>
+
+<div class="footer">Data stored locally in your browser</div>
+
+<script>
+(function() {
+  const $ = id => document.getElementById(id);
+  const KEY = 'scriptTracker';
+
+  // State
+  let state = { entries: [], limit: 60, window: 30 };
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (s.entries) state.entries = s.entries;
+        if (s.limit) state.limit = s.limit;
+        if (s.window) state.window = s.window;
+      }
+    } catch(e) {}
+    $('limitInput').value = state.limit;
+    $('windowInput').value = state.window;
+  }
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e) {}
+  }
+
+  function parseDate(str) {
+    const [y,m,d] = str.split('-').map(Number);
+    return new Date(y, m-1, d);
+  }
+
+  const DAYS = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+
+  function fmtDate(d) {
+    const day = String(d.getDate()).padStart(2,'0');
+    const mon = String(d.getMonth()+1).padStart(2,'0');
+    const yr = d.getFullYear();
+    return `${day}/${mon}/${yr}`;
+  }
+
+  function fmtDateDay(d) {
+    return `${DAYS[d.getDay()]} ${fmtDate(d)}`;
+  }
+
+  function addDays(d, n) {
+    const r = new Date(d);
+    r.setDate(r.getDate() + n);
+    return r;
+  }
+
+  function daysBetween(a, b) {
+    const msDay = 86400000;
+    return Math.ceil((b - a) / msDay);
+  }
+
+  function today() {
+    const n = new Date();
+    return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+  }
+
+  function getActiveEntries() {
+    const t = today();
+    const windowStart = addDays(t, -state.window);
+    return state.entries.filter(e => {
+      const d = parseDate(e.date);
+      return d > windowStart && d <= t;
+    });
+  }
+
+  function getUpcoming() {
+    // For each active entry, calc when it "frees up" (window days after dispensed)
+    const t = today();
+    const active = getActiveEntries();
+    const freeups = [];
+    active.forEach(e => {
+      const dispensed = parseDate(e.date);
+      const freeDate = addDays(dispensed, state.window);
+      const daysLeft = daysBetween(t, freeDate);
+      if (daysLeft > 0) {
+        freeups.push({ date: freeDate, grams: e.grams, daysLeft, name: e.name });
+      }
+    });
+    freeups.sort((a,b) => a.date - b.date);
+
+    // Group by date
+    const grouped = [];
+    freeups.forEach(f => {
+      const key = f.date.toISOString().split('T')[0];
+      const existing = grouped.find(g => g.key === key);
+      if (existing) {
+        existing.grams += f.grams;
+        existing.items.push(f);
+      } else {
+        grouped.push({ key, date: f.date, grams: f.grams, daysLeft: f.daysLeft, items: [f] });
+      }
+    });
+    return grouped;
+  }
+
+  function render() {
+    const active = getActiveEntries();
+    const usedGrams = active.reduce((s,e) => s + e.grams, 0);
+    const pct = Math.min(100, (usedGrams / state.limit) * 100);
+    const remaining = Math.max(0, state.limit - usedGrams);
+
+    $('used').textContent = usedGrams % 1 === 0 ? usedGrams : usedGrams.toFixed(1);
+    $('limitDisplay').textContent = state.limit;
+    $('remaining').textContent = remaining > 0 ? `${remaining % 1 === 0 ? remaining : remaining.toFixed(1)}g remaining` : 'Limit reached';
+
+    const bar = $('barFill');
+    bar.style.width = pct + '%';
+    bar.className = 'bar-fill' + (pct >= 100 ? ' full' : pct >= 80 ? ' warn' : '');
+
+    $('activeCount').textContent = active.length;
+    $('clearAllBtn').hidden = state.entries.length === 0;
+
+    // Next available
+    const upcoming = getUpcoming();
+    const nav = $('nextAvailable');
+    if (usedGrams >= state.limit && upcoming.length > 0) {
+      const next = upcoming[0];
+      nav.innerHTML = `<div class="next-available maxed"><span class="next-dot"></span>${next.grams}g frees up ${fmtDateDay(next.date)} (${next.daysLeft} day${next.daysLeft===1?'':'s'})</div>`;
+    } else if (usedGrams >= state.limit * 0.8 && upcoming.length > 0) {
+      const next = upcoming[0];
+      nav.innerHTML = `<div class="next-available waiting"><span class="next-dot"></span>Next ${next.grams}g available ${fmtDateDay(next.date)} (${next.daysLeft} day${next.daysLeft===1?'':'s'})</div>`;
+    } else if (remaining > 0) {
+      nav.innerHTML = `<div class="next-available ok"><span class="next-dot"></span>${remaining % 1 === 0 ? remaining : remaining.toFixed(1)}g available now</div>`;
+    } else {
+      nav.innerHTML = '';
+    }
+
+    // Freeups
+    const fs = $('freeupsSection');
+    if (upcoming.length > 0 && usedGrams > 0) {
+      let html = '<div class="freeups"><div class="freeups-title">Upcoming availability</div>';
+      upcoming.forEach(u => {
+        html += `<div class="freeup-row"><span>${fmtDateDay(u.date)} — ${u.daysLeft} day${u.daysLeft===1?'':'s'}</span><span class="grams">+${u.grams}g</span></div>`;
+      });
+      html += '</div>';
+      fs.innerHTML = html;
+    } else {
+      fs.innerHTML = '';
+    }
+
+    // Entry list
+    const list = $('entryList');
+    // Always sort by dispensed date descending, then by id as tiebreaker
+    const sorted = [...state.entries].sort((a,b) => {
+      const da = parseDate(a.date), db = parseDate(b.date);
+      return db - da || b.id - a.id;
+    });
+
+    if (sorted.length === 0) {
+      list.innerHTML = '<div class="empty-state">No scripts tracked yet</div>';
+      return;
+    }
+
+    const t = today();
+    const windowStart = addDays(t, -state.window);
+
+    list.innerHTML = sorted.map(e => {
+      const d = parseDate(e.date);
+      const isActive = d > windowStart && d <= t;
+      const opacity = isActive ? '1' : '0.4';
+      const tag = isActive ? '' : ' (expired)';
+      return `<div class="entry" style="opacity:${opacity}" data-id="${e.id}">
+        <span class="entry-name">${esc(e.name)}${tag}</span>
+        <span class="entry-grams">${e.grams}g</span>
+        <span class="entry-date">${fmtDate(d)}</span>
+        <button class="entry-delete" title="Remove" onclick="removeEntry(${e.id})">×</button>
+      </div>`;
+    }).join('');
+  }
+
+  function esc(s) {
+    const el = document.createElement('span');
+    el.textContent = s;
+    return el.innerHTML;
+  }
+
+  window.removeEntry = function(id) {
+    state.entries = state.entries.filter(e => e.id !== id);
+    save();
+    render();
+  };
+
+  // Add entry
+  $('addBtn').addEventListener('click', () => {
+    const name = $('medName').value.trim();
+    const grams = parseFloat($('medGrams').value);
+    const date = $('medDate').value;
+    if (!name || !grams || !date) return;
+
+    state.entries.push({
+      id: Date.now(),
+      name, grams, date
+    });
+    save();
+    render();
+
+    $('medName').value = '';
+    $('medGrams').value = '';
+    $('medName').focus();
+  });
+
+  // Enter key submits
+  [$('medName'), $('medGrams'), $('medDate')].forEach(el => {
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter') $('addBtn').click();
+    });
+  });
+
+  // Clear all
+  $('clearAllBtn').addEventListener('click', () => {
+    if (confirm('Remove all entries?')) {
+      state.entries = [];
+      save();
+      render();
+    }
+  });
+
+  // Settings
+  $('limitInput').addEventListener('change', function() {
+    const v = parseInt(this.value);
+    if (v > 0) { state.limit = v; save(); render(); }
+  });
+  $('windowInput').addEventListener('change', function() {
+    const v = parseInt(this.value);
+    if (v > 0) { state.window = v; save(); render(); }
+  });
+
+  // Set default date to today
+  const t = today();
+  $('medDate').value = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+
+  load();
+  render();
+})();
+</script>

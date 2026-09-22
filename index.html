@@ -1,4 +1,4 @@
-<title>Script Tracker</title>
+<title>MONTHLY LIMITS</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap">
 <style>
   :root {
@@ -505,7 +505,7 @@
     // Freeups
     const fs = $('freeupsSection');
     if (upcoming.length > 0 && usedGrams > 0) {
-      let html = '<div class="freeups"><div class="freeups-title">Upcoming availability</div>';
+      let html = '<div class="freeups"><div class="freeups-title">Upcoming Grammage</div>';
       upcoming.forEach(u => {
         html += `<div class="freeup-row"><span>${fmtDate(u.date)} — ${u.daysLeft} day${u.daysLeft===1?'':'s'}</span><span class="grams">+${u.grams}g</span></div>`;
       });

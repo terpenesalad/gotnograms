@@ -1,0 +1,685 @@
+<title>Monthly Limits</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: rgba(255,255,255,0.04);
+    --surface-solid: #1a1a1a;
+    --separator: rgba(255,255,255,0.08);
+    --text: rgba(255,255,255,0.92);
+    --text-secondary: rgba(255,255,255,0.55);
+    --text-tertiary: rgba(255,255,255,0.3);
+    --accent: #4cd964;
+    --accent-muted: rgba(76,217,100,0.15);
+    --amber: #ffcc00;
+    --amber-muted: rgba(255,204,0,0.12);
+    --red: #ff3b30;
+    --red-muted: rgba(255,59,48,0.12);
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, 'SF Pro Text', 'SF Pro Display', 'Helvetica Neue', 'Helvetica', sans-serif;
+    padding: 0 20px;
+    padding-block: 0;
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100%;
+    -webkit-font-smoothing: antialiased;
+    font-size: 15px;
+    line-height: 1.4;
+  }
+
+  /* Header */
+  .header {
+    padding: 32px 0 24px;
+  }
+  .header h1 {
+    font-size: 15px;
+    font-weight: 600;
+    margin: 0 0 2px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .header p {
+    font-size: 13px;
+    color: var(--text-tertiary);
+    margin: 0;
+    font-style: italic;
+  }
+
+  /* Usage */
+  .usage {
+    margin: 0 0 28px;
+  }
+  .usage-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 12px;
+  }
+  .usage-big {
+    font-size: 34px;
+    font-weight: 300;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .usage-big small {
+    font-size: 17px;
+    color: var(--text-tertiary);
+    font-weight: 400;
+  }
+  .usage-note {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .bar {
+    height: 4px;
+    background: var(--separator);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    background: var(--accent);
+    transition: width 0.5s cubic-bezier(0.4,0,0.2,1), background 0.3s;
+  }
+  .bar-fill.warn { background: var(--amber); }
+  .bar-fill.full { background: var(--red); }
+
+  /* Status pill */
+  .status {
+    margin: 16px 0 0;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+  }
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+  .status.ok { background: var(--accent-muted); color: var(--accent); }
+  .status.warn { background: var(--amber-muted); color: var(--amber); }
+  .status.full { background: var(--red-muted); color: var(--red); }
+
+  /* Section labels */
+  .label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-tertiary);
+    margin: 0 0 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .label-action {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+    cursor: pointer;
+    padding: 0;
+  }
+  .label-action:active { opacity: 0.5; }
+
+  /* Upcoming grammage */
+  .grammage { margin: 0 0 32px; }
+  .gram-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 0;
+    font-size: 14px;
+    border-bottom: 1px solid var(--separator);
+  }
+  .gram-row:last-child { border-bottom: none; }
+  .gram-row-date { color: var(--text-secondary); }
+  .gram-row-amount {
+    font-variant-numeric: tabular-nums;
+    color: var(--accent);
+    font-weight: 500;
+    font-size: 13px;
+  }
+
+  /* Dispensed list */
+  .dispensed { margin: 0 0 32px; }
+  .med {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--separator);
+    font-size: 14px;
+  }
+  .med:last-child { border-bottom: none; }
+  .med-info { flex: 1; min-width: 0; }
+  .med-name {
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .med-date {
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-top: 1px;
+  }
+  .med-grams {
+    font-variant-numeric: tabular-nums;
+    font-size: 14px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .med-delete {
+    background: none;
+    border: none;
+    color: var(--text-tertiary);
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 4px;
+    flex-shrink: 0;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .med-delete:active { color: var(--red); }
+  .med.expired { opacity: 0.35; }
+
+  .empty {
+    text-align: center;
+    color: var(--text-tertiary);
+    font-size: 14px;
+    padding: 28px 0;
+  }
+
+  /* Add form */
+  .form-card {
+    background: var(--surface-solid);
+    border-radius: 12px;
+    padding: 16px;
+    margin: 0 0 32px;
+  }
+
+  .field { margin-bottom: 12px; }
+  .field:last-of-type { margin-bottom: 14px; }
+  .field-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-tertiary);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .field-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  input[type="text"],
+  input[type="number"],
+  input[type="date"] {
+    width: 100%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 16px;
+    padding: 10px 12px;
+    outline: none;
+    box-sizing: border-box;
+    transition: border-color 0.2s;
+    -webkit-appearance: none;
+  }
+  input:focus { border-color: rgba(76,217,100,0.4); }
+  input::placeholder { color: var(--text-tertiary); }
+  input[type="date"] { color-scheme: dark; }
+
+  /* Autocomplete suggestions */
+  .suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .suggestion {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 5px 12px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: background 0.15s;
+    font-family: inherit;
+  }
+  .suggestion:active { background: rgba(255,255,255,0.12); }
+
+  .btn {
+    width: 100%;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-family: inherit;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.15s;
+  }
+  .btn:active { opacity: 0.7; }
+
+  /* Settings */
+  .settings {
+    padding: 0 0 48px;
+  }
+  .setting {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--separator);
+  }
+  .setting:last-child { border-bottom: none; }
+  .setting span {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+  .setting input {
+    width: 60px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+    font-size: 15px;
+    padding: 6px 8px;
+  }
+
+  .footer {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-tertiary);
+    padding: 0 0 32px;
+  }
+
+  /* Mobile tweaks */
+  @media (max-width: 420px) {
+    body { padding: 0 16px; }
+    .med-grams { font-size: 13px; }
+  }
+
+  @media (min-width: 481px) {
+    body { padding: 0 24px; }
+  }
+</style>
+
+<div class="header">
+  <h1>Monthly Limits</h1>
+  <p>No grim-grams?</p>
+</div>
+
+<div class="usage">
+  <div class="usage-row">
+    <div class="usage-big"><span id="used">0</span><small>g / <span id="limitDisplay">60</span>g</small></div>
+    <div class="usage-note" id="remaining"></div>
+  </div>
+  <div class="bar">
+    <div class="bar-fill" id="barFill" style="width:0%"></div>
+  </div>
+  <div id="statusPill"></div>
+</div>
+
+<div id="grammageSection"></div>
+
+<div class="dispensed">
+  <div class="label">
+    <span>Dispensed (<span id="activeCount">0</span> active)</span>
+    <button class="label-action" id="clearAllBtn" type="button" hidden>Clear all</button>
+  </div>
+  <div id="entryList">
+    <div class="empty">No scripts tracked yet</div>
+  </div>
+</div>
+
+<div class="form-card">
+  <div class="field">
+    <span class="field-label">Medication</span>
+    <input type="text" id="medName" placeholder="e.g. T20 Daylesford" autocomplete="off">
+    <div class="suggestions" id="suggestions"></div>
+  </div>
+  <div class="field">
+    <div class="field-row">
+      <div>
+        <span class="field-label">Grams</span>
+        <input type="number" id="medGrams" placeholder="10" min="0.5" step="0.5">
+      </div>
+      <div>
+        <span class="field-label">Dispensed</span>
+        <input type="date" id="medDate">
+      </div>
+    </div>
+  </div>
+  <button class="btn" id="addBtn" type="button">Add Script</button>
+</div>
+
+<div class="settings">
+  <div class="label">Settings</div>
+  <div class="setting">
+    <span>Monthly limit (g)</span>
+    <input type="number" id="limitInput" value="60" min="1" max="300">
+  </div>
+  <div class="setting">
+    <span>Rolling window (days)</span>
+    <input type="number" id="windowInput" value="30" min="1" max="90">
+  </div>
+</div>
+
+<div class="footer">Data stored locally in your browser</div>
+
+<script>
+(function() {
+  const $ = id => document.getElementById(id);
+  const KEY = 'scriptTracker';
+
+  let state = { entries: [], limit: 60, window: 30 };
+
+  function load() {
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (raw) {
+        const s = JSON.parse(raw);
+        if (s.entries) state.entries = s.entries;
+        if (s.limit) state.limit = s.limit;
+        if (s.window) state.window = s.window;
+      }
+    } catch(e) {}
+    $('limitInput').value = state.limit;
+    $('windowInput').value = state.window;
+  }
+
+  function save() {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e) {}
+  }
+
+  function parseDate(str) {
+    const [y,m,d] = str.split('-').map(Number);
+    return new Date(y, m-1, d);
+  }
+
+  const DAYS = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+
+  function fmtDate(d) {
+    const day = String(d.getDate()).padStart(2,'0');
+    const mon = String(d.getMonth()+1).padStart(2,'0');
+    return `${day}/${mon}/${d.getFullYear()}`;
+  }
+
+  function fmtDateDay(d) {
+    return `${DAYS[d.getDay()]} ${fmtDate(d)}`;
+  }
+
+  function addDays(d, n) {
+    const r = new Date(d);
+    r.setDate(r.getDate() + n);
+    return r;
+  }
+
+  function daysBetween(a, b) {
+    return Math.ceil((b - a) / 86400000);
+  }
+
+  function today() {
+    const n = new Date();
+    return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+  }
+
+  function getActiveEntries() {
+    const t = today();
+    const start = addDays(t, -state.window);
+    return state.entries.filter(e => {
+      const d = parseDate(e.date);
+      return d > start && d <= t;
+    });
+  }
+
+  function getUpcoming() {
+    const t = today();
+    const active = getActiveEntries();
+    const freeups = [];
+    active.forEach(e => {
+      const dispensed = parseDate(e.date);
+      const freeDate = addDays(dispensed, state.window);
+      const daysLeft = daysBetween(t, freeDate);
+      if (daysLeft > 0) {
+        freeups.push({ date: freeDate, grams: e.grams, daysLeft });
+      }
+    });
+    freeups.sort((a,b) => a.date - b.date);
+
+    const grouped = [];
+    freeups.forEach(f => {
+      const key = f.date.toISOString().split('T')[0];
+      const existing = grouped.find(g => g.key === key);
+      if (existing) {
+        existing.grams += f.grams;
+      } else {
+        grouped.push({ key, date: f.date, grams: f.grams, daysLeft: f.daysLeft });
+      }
+    });
+    return grouped;
+  }
+
+  // Get unique medication names from history
+  function getMedNames() {
+    const names = new Map();
+    // Most recent usage first
+    [...state.entries].reverse().forEach(e => {
+      const lower = e.name.toLowerCase();
+      if (!names.has(lower)) names.set(lower, e.name);
+    });
+    return [...names.values()];
+  }
+
+  function renderSuggestions() {
+    const box = $('suggestions');
+    const names = getMedNames();
+    const current = $('medName').value.trim().toLowerCase();
+
+    // Filter: show all if empty, or matching ones while typing
+    const filtered = current
+      ? names.filter(n => n.toLowerCase().includes(current) && n.toLowerCase() !== current)
+      : names;
+
+    if (filtered.length === 0) {
+      box.innerHTML = '';
+      return;
+    }
+
+    box.innerHTML = filtered.map(n =>
+      `<button type="button" class="suggestion">${esc(n)}</button>`
+    ).join('');
+
+    box.querySelectorAll('.suggestion').forEach(btn => {
+      btn.addEventListener('click', () => {
+        $('medName').value = btn.textContent;
+        box.innerHTML = '';
+        // Find the last grams used for this med and prefill
+        const lastEntry = [...state.entries].reverse().find(
+          e => e.name.toLowerCase() === btn.textContent.toLowerCase()
+        );
+        if (lastEntry && !$('medGrams').value) {
+          $('medGrams').value = lastEntry.grams;
+        }
+        $('medGrams').focus();
+      });
+    });
+  }
+
+  function render() {
+    const active = getActiveEntries();
+    const usedGrams = active.reduce((s,e) => s + e.grams, 0);
+    const pct = Math.min(100, (usedGrams / state.limit) * 100);
+    const remaining = Math.max(0, state.limit - usedGrams);
+
+    const fmt = v => v % 1 === 0 ? v : v.toFixed(1);
+
+    $('used').textContent = fmt(usedGrams);
+    $('limitDisplay').textContent = state.limit;
+    $('remaining').textContent = remaining > 0 ? `${fmt(remaining)}g remaining` : 'Limit reached';
+
+    const bar = $('barFill');
+    bar.style.width = pct + '%';
+    bar.className = 'bar-fill' + (pct >= 100 ? ' full' : pct >= 80 ? ' warn' : '');
+
+    $('activeCount').textContent = active.length;
+    $('clearAllBtn').hidden = state.entries.length === 0;
+
+    // Status pill
+    const upcoming = getUpcoming();
+    const pill = $('statusPill');
+    if (usedGrams >= state.limit && upcoming.length > 0) {
+      const next = upcoming[0];
+      pill.innerHTML = `<div class="status full"><span class="status-dot"></span>Next ${next.grams}g frees up ${fmtDateDay(next.date)} (${next.daysLeft} day${next.daysLeft===1?'':'s'})</div>`;
+    } else if (usedGrams >= state.limit * 0.8 && upcoming.length > 0) {
+      const next = upcoming[0];
+      pill.innerHTML = `<div class="status warn"><span class="status-dot"></span>Next ${next.grams}g available ${fmtDateDay(next.date)} (${next.daysLeft} day${next.daysLeft===1?'':'s'})</div>`;
+    } else if (remaining > 0) {
+      pill.innerHTML = `<div class="status ok"><span class="status-dot"></span>${fmt(remaining)}g available now</div>`;
+    } else {
+      pill.innerHTML = '';
+    }
+
+    // Upcoming grammage
+    const gs = $('grammageSection');
+    if (upcoming.length > 0 && usedGrams > 0) {
+      let html = '<div class="grammage"><div class="label">Upcoming Grammage</div>';
+      upcoming.forEach(u => {
+        html += `<div class="gram-row"><span class="gram-row-date">${fmtDateDay(u.date)} — ${u.daysLeft} day${u.daysLeft===1?'':'s'}</span><span class="gram-row-amount">+${u.grams}g</span></div>`;
+      });
+      html += '</div>';
+      gs.innerHTML = html;
+    } else {
+      gs.innerHTML = '';
+    }
+
+    // Entry list
+    const list = $('entryList');
+    const sorted = [...state.entries].sort((a,b) => {
+      const da = parseDate(a.date), db = parseDate(b.date);
+      return db - da || b.id - a.id;
+    });
+
+    if (sorted.length === 0) {
+      list.innerHTML = '<div class="empty">No scripts tracked yet</div>';
+      return;
+    }
+
+    const t = today();
+    const windowStart = addDays(t, -state.window);
+
+    list.innerHTML = sorted.map(e => {
+      const d = parseDate(e.date);
+      const isActive = d > windowStart && d <= t;
+      const cls = isActive ? 'med' : 'med expired';
+      const tag = isActive ? '' : ' — expired';
+      return `<div class="${cls}" data-id="${e.id}">
+        <div class="med-info">
+          <div class="med-name">${esc(e.name)}</div>
+          <div class="med-date">${fmtDate(d)}${tag}</div>
+        </div>
+        <div class="med-grams">${e.grams}g</div>
+        <button class="med-delete" title="Remove" onclick="removeEntry(${e.id})">×</button>
+      </div>`;
+    }).join('');
+
+    renderSuggestions();
+  }
+
+  function esc(s) {
+    const el = document.createElement('span');
+    el.textContent = s;
+    return el.innerHTML;
+  }
+
+  window.removeEntry = function(id) {
+    state.entries = state.entries.filter(e => e.id !== id);
+    save();
+    render();
+  };
+
+  // Add entry
+  $('addBtn').addEventListener('click', () => {
+    const name = $('medName').value.trim();
+    const grams = parseFloat($('medGrams').value);
+    const date = $('medDate').value;
+    if (!name || !grams || !date) return;
+
+    state.entries.push({ id: Date.now(), name, grams, date });
+    save();
+    render();
+
+    $('medName').value = '';
+    $('medGrams').value = '';
+    $('medName').focus();
+    renderSuggestions();
+  });
+
+  // Autocomplete on typing
+  $('medName').addEventListener('input', renderSuggestions);
+  $('medName').addEventListener('focus', renderSuggestions);
+
+  // Enter submits
+  [$('medName'), $('medGrams'), $('medDate')].forEach(el => {
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter') $('addBtn').click();
+    });
+  });
+
+  // Clear all
+  $('clearAllBtn').addEventListener('click', () => {
+    if (confirm('Remove all entries?')) {
+      state.entries = [];
+      save();
+      render();
+    }
+  });
+
+  // Settings
+  $('limitInput').addEventListener('change', function() {
+    const v = parseInt(this.value);
+    if (v > 0) { state.limit = v; save(); render(); }
+  });
+  $('windowInput').addEventListener('change', function() {
+    const v = parseInt(this.value);
+    if (v > 0) { state.window = v; save(); render(); }
+  });
+
+  // Default date to today
+  const t = today();
+  $('medDate').value = `${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}-${String(t.getDate()).padStart(2,'0')}`;
+
+  load();
+  render();
+})();
+</script>
